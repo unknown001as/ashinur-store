@@ -1,63 +1,7 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101b35"><title>Admin Login | ASHINUR STORE</title>
-<style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 15%,#294777,transparent 35%),linear-gradient(135deg,#0b1429,#18294c);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#18243c;display:grid;place-items:center;padding:22px}.wrap{width:min(440px,100%)}.brand{display:flex;align-items:center;gap:11px;color:white;font-weight:850;letter-spacing:.5px;margin-bottom:22px}.mark{width:43px;height:43px;border-radius:13px;background:#203c76;border:1px solid #ffffff40;color:#e8bb63;display:grid;place-items:center}.brand small{display:block;color:#aebbd0;font-size:10px;letter-spacing:1.5px;margin-top:3px}.card{background:white;border-radius:23px;padding:30px;box-shadow:0 25px 80px #050b1c70}.eyebrow{font-size:10px;letter-spacing:2px;color:#3769d6;font-weight:850}.card h1{font-size:27px;margin:9px 0 7px;letter-spacing:-.8px}.sub{color:#6c7890;font-size:13px;line-height:1.6;margin:0 0 22px}.field{display:grid;gap:7px;margin:15px 0}.field label{font-size:12px;font-weight:750}.field input{border:1px solid #e2e7ef;border-radius:11px;padding:13px 14px;font:inherit;outline-color:#3769d6}.btn{width:100%;border:0;border-radius:11px;padding:14px;background:#3769d6;color:white;font-weight:800;font-size:14px;cursor:pointer;margin-top:8px}.btn:disabled{opacity:.6;cursor:wait}.msg{font-size:12px;line-height:1.6;padding:11px 12px;border-radius:10px;margin-top:14px;display:none}.msg.show{display:block}.msg.error{background:#fff0f0;color:#a42b2b}.msg.info{background:#edf3ff;color:#234c9b}.msg.ok{background:#edf9f0;color:#176b35}.back{display:block;text-align:center;color:#aebbd0;font-size:12px;margin-top:19px}.foot{font-size:11px;color:#71809a;text-align:center;line-height:1.6;margin-top:18px}.dashboard{display:none}.dashboard.show{display:block}.logout{background:#101b35;margin-top:10px}.confighelp{background:#fff8e8;color:#775314;border:1px solid #f1dfb7;border-radius:11px;padding:12px;font-size:11px;line-height:1.6;margin-top:16px}code{background:#f1f3f7;padding:2px 4px;border-radius:4px}
-</style></head><body><main class="wrap">
-<a class="brand" href="./"><span class="mark">AS</span><span>ASHINUR STORE<small>ADMIN CONTROL PANEL</small></span></a>
-<section class="card" id="loginPanel"><div class="eyebrow">RESTRICTED ACCESS</div><h1>Admin Login</h1><p class="sub">Sign in with your authorized store administrator account.</p>
-<div class="field"><label for="email">Admin Email</label><input id="email" type="email" autocomplete="username" value="ashinurstore@gmail.com" readonly></div>
-<div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter your admin password"></div>
-<button class="btn" id="loginBtn">Sign in securely</button><div class="msg" id="message" role="status"></div>
-<div class="confighelp"><b>First-time setup required:</b> This login uses Firebase Authentication. Add your Firebase web-app configuration in this file and enable Email/Password sign-in in Firebase Console. The admin account must be created there. No password is stored in this website or GitHub.</div>
-</section>
-<section class="card dashboard" id="dashboard"><div class="eyebrow">AUTHENTICATED</div><h1>Welcome, Admin</h1><p class="sub">You are signed in as <b id="signedEmail"></b>.</p><div class="msg info show">Authentication is active. Product, order and customer-management features are not connected yet.</div><button class="btn logout" id="logoutBtn">Sign out</button></section>
-<a class="back" href="./">← Back to ASHINUR STORE</a><div class="foot">Protected sign-in · Never share your password · ASHINUR STORE</div>
-</main>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-
-// Replace these placeholders with the Firebase Web App config from Firebase Console.
-// Firebase web config is public by design; security must be enforced with Firebase Auth and Security Rules.
-const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_FIREBASE_APP_ID"
-};
-const ADMIN_EMAIL = "ashinurstore@gmail.com";
-const msg = document.getElementById("message");
-const loginBtn = document.getElementById("loginBtn");
-function showMessage(text,type="info"){msg.textContent=text;msg.className="msg show "+type}
-const configured = firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY" && firebaseConfig.projectId !== "YOUR_PROJECT_ID" && firebaseConfig.appId !== "YOUR_FIREBASE_APP_ID";
-let auth = null;
-if(configured){
-  try {
-    const app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    onAuthStateChanged(auth, async user => {
-      if(user && user.email && user.email.toLowerCase() === ADMIN_EMAIL){
-        document.getElementById("loginPanel").style.display="none";
-        document.getElementById("dashboard").classList.add("show");
-        document.getElementById("signedEmail").textContent=user.email;
-      } else {
-        if(user) await signOut(auth);
-        document.getElementById("loginPanel").style.display="block";
-        document.getElementById("dashboard").classList.remove("show");
-      }
-    });
-  } catch(e){showMessage("Firebase setup error. Check your Firebase web configuration.","error")}
-}
-loginBtn.addEventListener("click", async()=>{
-  const email=document.getElementById("email").value.trim().toLowerCase();
-  const password=document.getElementById("password").value;
-  if(email!==ADMIN_EMAIL){showMessage("This email is not authorized for admin access.","error");return}
-  if(!password){showMessage("Please enter your password.","error");return}
-  if(!auth){showMessage("Firebase is not configured yet. Follow the setup instructions in README.md before signing in.","error");return}
-  loginBtn.disabled=true;loginBtn.textContent="Signing in…";
-  try{await signInWithEmailAndPassword(auth,email,password);showMessage("Signed in successfully.","ok")}
-  catch(e){showMessage(e.code==="auth/invalid-credential"?"Email or password is incorrect.":e.code==="auth/too-many-requests"?"Too many attempts. Try again later.":"Unable to sign in. Check Firebase Authentication setup.","error")}
-  finally{loginBtn.disabled=false;loginBtn.textContent="Sign in securely"}
-});
-document.getElementById("logoutBtn").addEventListener("click",async()=>{if(auth)await signOut(auth)});
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101b35"><title>Admin Login | ASHINUR STORE</title><style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0b1429,#18294c);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:grid;place-items:center;padding:22px;color:#17233c}.card{background:white;width:min(480px,100%);padding:30px;border-radius:22px;box-shadow:0 24px 70px #0005}.brand{display:flex;gap:10px;align-items:center;color:white;font-weight:850;margin-bottom:22px}.mark{width:42px;height:42px;border-radius:12px;background:#243e70;color:#e8bb63;display:grid;place-items:center}.brand small{display:block;color:#b8c5da;font-size:10px;letter-spacing:1px}.eyebrow{color:#3769d6;font-size:10px;letter-spacing:2px;font-weight:850}h1{font-size:27px;margin:10px 0}.sub{font-size:13px;color:#66748c;line-height:1.65}.field{display:grid;gap:7px;margin:18px 0}.field label{font-size:12px;font-weight:750}.field input{padding:13px;border:1px solid #dfe5ef;border-radius:10px;font:inherit;width:100%}.btn{border:0;border-radius:10px;padding:14px;background:#3769d6;color:white;font-weight:800;width:100%;cursor:pointer}.hint{font-size:11px;color:#78849a;line-height:1.6;margin-top:15px}.back{display:block;text-align:center;margin-top:18px;color:#b8c5da;font-size:12px;text-decoration:none}.msg{font-size:12px;color:#8a5411;background:#fff6e5;padding:10px;border-radius:9px;line-height:1.5;margin-top:12px}
+</style></head><body><main><div class="brand"><span class="mark">AS</span><span>ASHINUR STORE<small>ADMIN CONTROL PANEL</small></span></div><section class="card"><div class="eyebrow">GITHUB SECURE SIGN-IN</div><h1>Admin Login</h1><p class="sub">Admin authentication is handled by your Cloudflare Worker. Your GitHub password is entered only on GitHub and is never stored on this website.</p><div class="field"><label for="workerUrl">Cloudflare Worker Admin URL</label><input id="workerUrl" type="url" placeholder="https://ashinur-store-auth.your-subdomain.workers.dev/admin"></div><button class="btn" id="go">Continue to GitHub Login ↗</button><div class="msg">First-time setup: deploy the Worker and configure the GitHub OAuth App and Cloudflare secrets. See the repository README.</div><p class="hint">Authorized GitHub account: <b>unknown001as</b>. Only this GitHub username is allowed by the Worker. You can save your Worker URL in this browser for next time.</p></section><a class="back" href="./">← Back to Store</a></main><script>
+const input=document.getElementById("workerUrl");input.value=localStorage.getItem("ashinurStoreWorkerUrl")||"";
+document.getElementById("go").addEventListener("click",()=>{let value=input.value.trim().replace(/\/$/,"");try{const u=new URL(value);if(u.protocol!=="https:"||!u.hostname.endsWith(".workers.dev"))throw new Error();localStorage.setItem("ashinurStoreWorkerUrl",value);location.href=value.endsWith("/admin")?value:value+"/admin"}catch{alert("Please enter your valid HTTPS Cloudflare Worker URL ending in .workers.dev") }});
 </script></body></html>
