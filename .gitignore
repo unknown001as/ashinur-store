@@ -1,2 +1,6 @@
 .DS_Store
 Thumbs.db
+
+# Local secrets and Wrangler files
+.dev.vars*
+.env*
