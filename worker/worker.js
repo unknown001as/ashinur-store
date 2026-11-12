@@ -84,6 +84,7 @@ export default {
       authorize.searchParams.set("client_id", env.GITHUB_CLIENT_ID);
       authorize.searchParams.set("redirect_uri", callback);
       authorize.searchParams.set("scope", "read:user");
+      authorize.searchParams.set("allow_signup", "false");
       authorize.searchParams.set("state", state);
       authorize.searchParams.set("code_challenge", challenge);
       authorize.searchParams.set("code_challenge_method", "S256");
