@@ -3,38 +3,59 @@
 A responsive static storefront for **ASHINUR STORE** — “Your Digital World, One Destination.”
 
 ## Files
-- `index.html` — complete mobile-friendly storefront, sample product catalogue, cart and online service enquiry forms.
+- `index.html` — responsive storefront, sample product catalogue, cart and service enquiry forms.
+- `admin.html` — links the store owner to the Cloudflare Worker admin login.
+- `worker/worker.js` — GitHub OAuth backend for Cloudflare Workers.
+- `worker/wrangler.toml` — Wrangler deployment configuration.
 
-## Publish with GitHub Pages
+## Publish the storefront with GitHub Pages
 1. Open **Settings → Pages** in this repository.
-2. Under **Build and deployment**, select **Deploy from a branch**.
-3. Select branch **main** and folder **/(root)**, then Save.
-4. After GitHub Pages finishes deploying, the site should be available at:
-   `https://unknown001as.github.io/ashinur-store/`
+2. Select **Deploy from a branch**.
+3. Choose branch **main** and folder **/(root)**, then Save.
+4. Storefront URL: https://unknown001as.github.io/ashinur-store/
 
-## Important setup before accepting enquiries
-Open `index.html` and find:
-`const WHATSAPP_NUMBER = "";`
-Set it to the store WhatsApp number with country code, digits only (example format: `919876543210`). Commit the change.
+## Set up GitHub OAuth admin login (no Firebase)
 
-The catalogue uses demo product names and prices. Replace them with actual products, inventory and confirmed prices before publishing to customers.
+The authorized GitHub username in the Worker defaults to `unknown001as`. Login is restricted to that exact GitHub username. The GitHub OAuth client secret and session signing secret must never be committed to this repository.
 
-## Current limitations
-This is a static demo site. It has no server, database, shared admin dashboard, customer accounts, file uploads, live stock tracking or integrated payment gateway. Cart and service requests are sent as WhatsApp messages only after a WhatsApp number has been configured. Orders are not stored by this site. Do not ask customers to submit sensitive identity documents through an unverified channel.
+### 1. Deploy the Cloudflare Worker
+1. Sign in to https://dash.cloudflare.com/ and open **Workers & Pages**.
+2. Create a Worker named `ashinur-store-auth`.
+3. Deploy the starter Worker, then open **Edit code**.
+4. Copy the complete contents of `worker/worker.js` from this repository and replace the editor contents. Save and Deploy.
+5. Open the Worker URL shown by Cloudflare. It will look like `https://ashinur-store-auth.<your-subdomain>.workers.dev`. Keep this exact URL.
 
-Government service references are descriptions of assistance only; ASHINUR STORE is not a government department and does not imply government affiliation.
+You can also deploy with Wrangler from the `worker` folder using `npx wrangler deploy` after installing Wrangler and logging in to Cloudflare.
 
-## Admin login setup
+### 2. Create a GitHub OAuth App
+1. Open https://github.com/settings/developers and select **OAuth Apps → New OAuth App**.
+2. Application name: `ASHINUR STORE Admin`.
+3. Homepage URL: your exact Cloudflare Worker URL from step 1.
+4. Authorization callback URL: your Worker URL followed by `/auth/callback` (example: `https://ashinur-store-auth.<your-subdomain>.workers.dev/auth/callback`).
+5. Register the app. Copy its **Client ID**, then generate a **Client Secret**.
 
-The admin page is `admin.html` and the storefront footer links to it. It uses Firebase Authentication; it does **not** contain a hardcoded password.
+### 3. Add Cloudflare Worker variables/secrets
+In Cloudflare → Workers & Pages → `ashinur-store-auth` → **Settings → Variables and Secrets**, add:
 
-1. Create a Firebase project at https://console.firebase.google.com/.
-2. Add a Web App in Project settings and copy its Firebase web configuration.
-3. In Firebase Console → Authentication → Sign-in method, enable **Email/Password**.
-4. In Authentication → Users, create the admin user with the authorized email `ashinurstore@gmail.com`. Set a fresh password in Firebase Console; do not reuse a password that has been posted in chat or committed to GitHub.
-5. Open `admin.html` in this repository and replace the placeholder values in `firebaseConfig` with your Firebase Web App config.
-6. Commit the change and open `https://unknown001as.github.io/ashinur-store/admin.html` after GitHub Pages has deployed.
+| Name | Type | Value |
+|---|---|---|
+| `GITHUB_CLIENT_ID` | Secret | Client ID from your GitHub OAuth App |
+| `GITHUB_CLIENT_SECRET` | Secret | Client Secret from your GitHub OAuth App |
+| `SESSION_SECRET` | Secret | A newly generated random secret (at least 32 random bytes) |
+| `ALLOWED_GITHUB_LOGIN` | Variable | `unknown001as` |
 
-The page only allows the configured admin email through its UI. If you later connect Firestore or Storage, configure Firebase Security Rules to enforce admin authorization server-side; a client-side email check alone is not a security boundary.
+Save and deploy the Worker after adding the values. Do not put these secrets in GitHub files, screenshots, chats or public code. Cloudflare documents that Worker secrets are encrypted and available to the Worker through its environment: https://developers.cloudflare.com/workers/configuration/secrets/
 
-The current admin page authenticates the administrator and displays a basic authenticated landing screen. It does not yet manage products, orders or customer records.
+### 4. Open the admin login
+1. Open https://unknown001as.github.io/ashinur-store/admin.html
+2. Paste your exact Cloudflare Worker URL into the field and click **Continue to GitHub Login**.
+3. Sign in to GitHub. Only `unknown001as` is allowed.
+
+GitHub OAuth uses a state check and PKCE; the Worker exchanges the temporary code server-side and stores a signed, HttpOnly, Secure session cookie on the Worker origin. The Worker asks only for `read:user`. GitHub OAuth callback URLs must match the registered callback URL: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
+
+## Important current limitations
+- The Worker provides secure GitHub sign-in and a basic admin landing page only. Product, inventory, order, customer and service-request management are not implemented yet.
+- The GitHub Pages storefront is static. It has no database, customer accounts, live stock tracking or integrated payment gateway.
+- The sample product names/prices must be replaced with real catalogue data.
+- WhatsApp order/service handoff remains disabled until a store WhatsApp number is configured in `index.html`.
+- Government service references describe assistance only; ASHINUR STORE is not a government department and does not imply government affiliation.
