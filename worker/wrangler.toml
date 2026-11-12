@@ -1,0 +1,7 @@
+name = "ashinur-store-auth"
+main = "worker.js"
+compatibility_date = "2026-11-12"
+
+# After deployment, create a GitHub OAuth App using:
+# Homepage URL: https://<your-worker-subdomain>.workers.dev
+# Authorization callback URL: https://<your-worker-subdomain>.workers.dev/auth/callback
