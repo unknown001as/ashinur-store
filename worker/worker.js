@@ -77,25 +77,30 @@ export default {
     }
     if (url.pathname === "/auth/login") {
       const state = b64url(crypto.getRandomValues(new Uint8Array(32)));
+      const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
+      const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
       const callback = url.origin + "/auth/callback";
       const authorize = new URL("https://github.com/login/oauth/authorize");
       authorize.searchParams.set("client_id", env.GITHUB_CLIENT_ID);
       authorize.searchParams.set("redirect_uri", callback);
       authorize.searchParams.set("scope", "read:user");
       authorize.searchParams.set("state", state);
-      return redirect(authorize.toString(), { "Set-Cookie": cookieHeader(STATE_COOKIE, state, 600) });
+      authorize.searchParams.set("code_challenge", challenge);
+      authorize.searchParams.set("code_challenge_method", "S256");
+      return redirect(authorize.toString(), { "Set-Cookie": cookieHeader(STATE_COOKIE, state + "." + verifier, 600) });
     }
     if (url.pathname === "/auth/callback" && request.method === "GET") {
       const state = url.searchParams.get("state") || "";
-      const savedState = cookie(request, STATE_COOKIE);
+      const stateCookie = cookie(request, STATE_COOKIE);
+      const [savedState, verifier] = stateCookie.split(".");
       const clearState = clearCookie(STATE_COOKIE);
-      if (!state || !savedState || state !== savedState) return response(loginPage("Login session expired or invalid. Please try again."), 400, { "Set-Cookie": clearState });
+      if (!state || !savedState || !verifier || state !== savedState) return response(loginPage("Login session expired or invalid. Please try again."), 400, { "Set-Cookie": clearState });
       const code = url.searchParams.get("code");
       if (!code) return response(loginPage("GitHub did not return an authorization code."), 400, { "Set-Cookie": clearState });
       const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
         method: "POST",
         headers: { "Accept": "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code, redirect_uri: url.origin + "/auth/callback" })
+        body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code, redirect_uri: url.origin + "/auth/callback", code_verifier: verifier })
       });
       const tokenData = await tokenResponse.json();
       if (!tokenResponse.ok || !tokenData.access_token) return response(loginPage("GitHub sign-in could not be completed. Please try again."), 401, { "Set-Cookie": clearState });
@@ -105,7 +110,7 @@ export default {
         return response(loginPage("This GitHub account is not authorized for ASHINUR STORE administration."), 403, { "Set-Cookie": clearState });
       }
       const session = await makeSession(user, env.SESSION_SECRET);
-      return redirect("/admin", { "Set-Cookie": [cookieHeader(COOKIE_NAME, session, SESSION_SECONDS), clearState].join(", ") });
+      return redirect("/admin", { "Set-Cookie": cookieHeader(COOKIE_NAME, session, SESSION_SECONDS) });
     }
     if (url.pathname === "/auth/logout" && request.method === "POST") {
       return redirect("/admin", { "Set-Cookie": clearCookie(COOKIE_NAME) });
